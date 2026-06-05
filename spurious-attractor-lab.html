@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPURIOUS ATTRACTOR LAB — Pattern Retrieval</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+
+:root {
+  --p0: #f3e8ff;
+  --p1: #e9d5ff;
+  --p2: #d8b4fe;
+  --p3: #c084fc;
+  --p4: #a855f7;
+  --p5: #9333ea;
+  --p6: #7c3aed;
+  --p7: #6d28d9;
+  --p8: #4c1d95;
+  --p9: #3b0764;
+  --bg: #030108;
+  --bg2: #060110;
+  --bg3: #0a0218;
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'VT323', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--p2);
+  font-family: var(--mono);
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* Scanlines */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.18) 0px,
+    rgba(0,0,0,0.18) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* Vignette */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%);
+  pointer-events: none;
+  z-index: 9997;
+}
+
+/* ── TICKER ── */
+.ticker {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 22px;
+  background: #020007;
+  border-bottom: 1px solid var(--p8);
+  overflow: hidden;
+  z-index: 9996;
+  display: flex;
+  align-items: center;
+}
+.ticker-inner {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker 28s linear infinite;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--p8);
+}
+@keyframes ticker {
+  0% { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 22px; left: 0; right: 0;
+  height: 36px;
+  background: rgba(3,1,8,0.97);
+  border-bottom: 1px solid var(--p9);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 9995;
+}
+.nav-logo {
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--p7);
+  text-transform: uppercase;
+}
+.nav-links {
+  display: flex;
+  gap: 28px;
+  list-style: none;
+}
+.nav-links a {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--p8);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--p3); }
+.nav-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--p6);
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--p5);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── MAIN ── */
+main {
+  margin-top: 58px;
+  padding: 0 24px 80px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── HERO HEADER ── */
+.hero-header {
+  padding: 60px 0 40px;
+  border-bottom: 1px solid var(--p9);
+  animation: fadeUp 0.8s ease both;
+}
+.hero-eyebrow {
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--p8);
+  margin-bottom: 12px;
+}
+.hero-title {
+  font-family: var(--display);
+  font-size: clamp(44px, 8vw, 88px);
+  line-height: 1;
+  color: var(--p3);
+  letter-spacing: 4px;
+  text-shadow: 0 0 40px rgba(168,85,247,0.4), 0 0 80px rgba(124,58,237,0.2);
+  animation: flicker 8s ease-in-out infinite;
+}
+@keyframes flicker {
+  0%,94%,96%,98%,100% { opacity: 1; }
+  95% { opacity: 0.85; }
+  97% { opacity: 0.92; }
+  99% { opacity: 0.88; }
+}
+.hero-sub {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--p7);
+  margin-top: 10px;
+}
+
+/* ── SPEC ROW ── */
+.spec-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--p9);
+  margin: 32px 0;
+  animation: fadeUp 0.8s 0.1s ease both;
+}
+.spec-item {
+  flex: 1;
+  min-width: 100px;
+  padding: 12px 16px;
+  border-right: 1px solid var(--p9);
+}
+.spec-item:last-child { border-right: none; }
+.spec-label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--p8);
+  margin-bottom: 4px;
+}
+.spec-val {
+  font-family: var(--display);
+  font-size: 22px;
+  color: var(--p4);
+  letter-spacing: 1px;
+}
+.spec-val.danger { color: #f43f5e; text-shadow: 0 0 10px rgba(244,63,94,0.4); }
+
+/* ── GLYPH SECTION ── */
+.glyph-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 40px 0;
+  animation: fadeUp 0.8s 0.2s ease both;
+}
+@media (max-width: 600px) { .glyph-section { grid-template-columns: 1fr; } }
+
+.glyph-panel {
+  border: 1px solid var(--p8);
+  background: var(--bg2);
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+.glyph-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(109,40,217,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--p9);
+  background: rgba(2,0,7,0.8);
+}
+.panel-label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--p7);
+}
+.panel-status {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--p5);
+}
+
+.glyph-canvas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  min-height: 280px;
+  position: relative;
+}
+
+/* The SVG ghost glyph inline */
+.ghost-svg {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  filter: drop-shadow(0 0 12px rgba(168,85,247,0.6)) drop-shadow(0 0 24px rgba(124,58,237,0.3));
+  transition: filter 0.3s;
+}
+.ghost-svg:hover {
+  filter: drop-shadow(0 0 20px rgba(192,132,252,0.8)) drop-shadow(0 0 40px rgba(168,85,247,0.4));
+}
+
+.locked-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid var(--p6);
+  background: rgba(3,1,8,0.9);
+  padding: 4px 14px;
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--p2);
+  white-space: nowrap;
+  animation: badgePulse 3s ease-in-out infinite;
+}
+@keyframes badgePulse {
+  0%,100% { border-color: var(--p6); color: var(--p2); }
+  50% { border-color: var(--p3); color: var(--p0); box-shadow: 0 0 12px rgba(168,85,247,0.3); }
+}
+
+/* Energy plot panel */
+.energy-panel {
+  border: 1px solid var(--p9);
+  background: var(--bg2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.energy-plot-area {
+  flex: 1;
+  padding: 16px;
+  position: relative;
+}
+.energy-plot-area svg { width: 100%; height: 160px; }
+
+/* ── LORE / TECH TEXT ── */
+.lore-section {
+  border-left: 2px solid var(--p7);
+  padding: 0 0 0 20px;
+  margin: 40px 0;
+  animation: fadeUp 0.8s 0.3s ease both;
+}
+.lore-section p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--p7);
+  margin-bottom: 14px;
+  letter-spacing: 0.5px;
+}
+.lore-section p span { color: var(--p3); }
+.lore-section p em { color: var(--p2); font-style: normal; }
+
+/* ── SIMULATE BUTTON ── */
+.simulate-section {
+  margin: 48px 0;
+  text-align: center;
+  animation: fadeUp 0.8s 0.4s ease both;
+}
+.simulate-btn {
+  display: inline-block;
+  font-family: var(--display);
+  font-size: 28px;
+  letter-spacing: 4px;
+  color: var(--p1);
+  background: transparent;
+  border: 1px solid var(--p6);
+  padding: 18px 48px;
+  cursor: crosshair;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+  text-shadow: 0 0 20px rgba(192,132,252,0.5);
+}
+.simulate-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(124,58,237,0.1) 0%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.3s;
+}
+.simulate-btn:hover::before { transform: translateX(0); }
+.simulate-btn:hover {
+  border-color: var(--p3);
+  box-shadow: 0 0 30px rgba(168,85,247,0.2), inset 0 0 20px rgba(124,58,237,0.08);
+  color: var(--p0);
+}
+.simulate-btn:active { transform: scale(0.98); }
+.simulate-btn.running {
+  color: var(--p5);
+  border-color: var(--p7);
+  animation: scanBorder 0.5s linear infinite;
+}
+@keyframes scanBorder {
+  0%,100% { box-shadow: 0 0 0 0 rgba(168,85,247,0); }
+  50% { box-shadow: 0 0 20px 4px rgba(168,85,247,0.2); }
+}
+
+.simulate-hint {
+  margin-top: 10px;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--p8);
+}
+
+/* ── PASS INDICATOR ── */
+.pass-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+.pass-pip {
+  width: 32px; height: 8px;
+  border: 1px solid var(--p9);
+  background: var(--bg);
+  transition: all 0.2s;
+}
+.pass-pip.active {
+  background: var(--p6);
+  border-color: var(--p4);
+  box-shadow: 0 0 8px rgba(124,58,237,0.5);
+}
+.pass-pip.done {
+  background: var(--p8);
+  border-color: var(--p7);
+}
+
+/* ── FAMILIES REFERENCE ── */
+.families-section {
+  margin: 48px 0;
+  animation: fadeUp 0.8s 0.5s ease both;
+}
+.section-title {
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--p8);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--p9);
+}
+.families-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 1px;
+  background: var(--p9);
+  border: 1px solid var(--p9);
+}
+.family-card {
+  background: var(--bg2);
+  padding: 14px 12px;
+  position: relative;
+  transition: background 0.2s;
+}
+.family-card:hover { background: var(--bg3); }
+.family-card.ghost-card {
+  border: 1px solid var(--p6);
+  background: rgba(109,40,217,0.06);
+  margin: -1px;
+  z-index: 1;
+}
+.family-name {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--p7);
+  margin-bottom: 8px;
+}
+.family-name.ghost { color: var(--p4); }
+.family-pop {
+  font-family: var(--display);
+  font-size: 20px;
+  color: var(--p6);
+}
+.family-pop.ghost { color: var(--p3); }
+.family-stat {
+  font-size: 7px;
+  letter-spacing: 2px;
+  color: var(--p9);
+  margin-top: 2px;
+}
+
+/* ── TERMINAL BLOCK ── */
+.terminal {
+  border: 1px solid var(--p9);
+  background: var(--bg2);
+  padding: 0;
+  margin: 40px 0;
+  animation: fadeUp 0.8s 0.6s ease both;
+}
+.terminal-header {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--p9);
+  background: rgba(2,0,7,0.9);
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--p8);
+  display: flex;
+  justify-content: space-between;
+}
+.terminal-body {
+  padding: 16px 14px;
+  font-size: 10px;
+  line-height: 1.9;
+  color: var(--p7);
+}
+.terminal-body .cmd { color: var(--p4); }
+.terminal-body .out { color: var(--p7); padding-left: 12px; }
+.terminal-body .hi { color: var(--p2); }
+.terminal-body .err { color: #f43f5e; }
+.terminal-body .cursor {
+  display: inline-block;
+  width: 8px; height: 11px;
+  background: var(--p5);
+  vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--p9);
+  padding: 32px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 500px) { .footer-grid { grid-template-columns: 1fr; } }
+.footer-col-label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--p8);
+  margin-bottom: 8px;
+}
+.footer-col-val {
+  font-size: 10px;
+  color: var(--p6);
+  letter-spacing: 1px;
+  word-break: break-all;
+}
+.footer-col-val a {
+  color: var(--p6);
+  text-decoration: none;
+}
+.footer-col-val a:hover { color: var(--p3); }
+.footer-bottom {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(59,7,100,0.5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--p9);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* glitch animation for simulate */
+@keyframes glitch {
+  0%,100% { clip-path: inset(0 0 100% 0); transform: translate(0); }
+  5% { clip-path: inset(10% 0 60% 0); transform: translate(-4px, 2px); }
+  10% { clip-path: inset(40% 0 30% 0); transform: translate(4px, -2px); }
+  15% { clip-path: inset(70% 0 5% 0); transform: translate(-2px, 3px); }
+  20% { clip-path: inset(0 0 0 0); transform: translate(0); }
+}
+.glitch-layer {
+  position: absolute;
+  inset: 0;
+  background: rgba(168,85,247,0.05);
+  animation: glitch 0.3s steps(1) 3;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<!-- Ticker -->
+<div class="ticker">
+  <span class="ticker-inner">
+    EIGHT PASSES &nbsp;·&nbsp; λ=0.35 &nbsp;·&nbsp; STORE &nbsp;·&nbsp; CORRUPT &nbsp;·&nbsp; RELAX &nbsp;·&nbsp; RECALL &nbsp;·&nbsp;
+    SPURIOUS STATE DETECTED &nbsp;·&nbsp; FALSE ATTRACTOR STABLE &nbsp;·&nbsp; EIGHT PASSES &nbsp;·&nbsp; λ=0.35 &nbsp;·&nbsp;
+    STORE &nbsp;·&nbsp; CORRUPT &nbsp;·&nbsp; RELAX &nbsp;·&nbsp; RECALL &nbsp;·&nbsp; ENERGY MINIMUM FOUND &nbsp;·&nbsp;
+    NEW ATTRACTOR UNLOCKED &nbsp;·&nbsp; 94 SPECIMENS &nbsp;·&nbsp; 7 FAMILIES &nbsp;·&nbsp; HEBBIAN LEARNING &nbsp;·&nbsp;
+    EIGHT PASSES &nbsp;·&nbsp; λ=0.35 &nbsp;·&nbsp;
+  </span>
+</div>
+
+<!-- Nav -->
+<nav>
+  <span class="nav-logo">Pattern Retrieval</span>
+  <ul class="nav-links">
+    <li><a href="#">Artist's Statement</a></li>
+    <li><a href="#">Artwork</a></li>
+    <li><a href="#">Components</a></li>
+    <li><a href="#" style="color:var(--p4)">· Mint</a></li>
+  </ul>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    <span>STATUS: ONLINE</span>
+  </div>
+</nav>
+
+<main>
+  <!-- Hero Header -->
+  <header class="hero-header">
+    <div class="hero-eyebrow">—— . HIDDEN ARCHIVE · SPURIOUS MEMORY RESEARCH</div>
+    <h1 class="hero-title">SPURIOUS<br>ATTRACTOR LAB</h1>
+    <div class="hero-sub">HOPFIELD NETWORK OVERLOAD EXPERIMENT · 94 PATTERNS · CAPACITY ~9</div>
+  </header>
+
+  <!-- Spec Row -->
+  <div class="spec-row">
+    <div class="spec-item">
+      <div class="spec-label">SPECIMENS</div>
+      <div class="spec-val">094</div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-label">NETWORK CAP</div>
+      <div class="spec-val">~009</div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-label">OVERLOAD</div>
+      <div class="spec-val danger">10.4×</div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-label">PASSES</div>
+      <div class="spec-val">8</div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-label">λ</div>
+      <div class="spec-val">0.35</div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-label">STATUS</div>
+      <div class="spec-val" style="color:var(--p4);font-size:18px">GHOST</div>
+    </div>
+  </div>
+
+  <!-- Glyph + Energy Section -->
+  <div class="glyph-section">
+    <!-- Ghost glyph panel -->
+    <div class="glyph-panel">
+      <div class="panel-header">
+        <span class="panel-label">SPURIOUS PATTERN · VARIANT <span id="variant-num">01</span></span>
+        <span class="panel-status" id="panel-status">STABLE</span>
+      </div>
+      <div class="glyph-canvas" id="glyph-canvas">
+        <!-- SVG ghost glyph drawn in JS -->
+        <svg class="ghost-svg" id="ghost-svg" viewBox="0 0 176 220" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="locked-badge" id="locked-badge">◈ SPURIOUS TARGET LOCKED</div>
+      </div>
+    </div>
+
+    <!-- Energy + diagnostics panel -->
+    <div class="energy-panel">
+      <div class="panel-header">
+        <span class="panel-label">ENERGY LANDSCAPE</span>
+        <span class="panel-status">DESCENT COMPLETE</span>
+      </div>
+      <div class="energy-plot-area">
+        <svg id="energy-svg" viewBox="0 0 240 160" xmlns="http://www.w3.org/2000/svg">
+          <line x1="10" y1="150" x2="230" y2="150" stroke="#3b0764" stroke-width="0.5"/>
+          <line x1="10" y1="10" x2="10" y2="150" stroke="#3b0764" stroke-width="0.5"/>
+          <polyline id="energy-line" points="10,30 38,60 66,88 94,108 122,122 150,131 178,136 206,138 230,139"
+            fill="none" stroke="#a855f7" stroke-width="1.5"/>
+          <circle id="energy-dot" cx="230" cy="139" r="3" fill="#c084fc"/>
+          <text x="14" y="20" font-family="'Share Tech Mono',monospace" font-size="7" fill="#4c1d95">E(t)</text>
+          <text x="14" y="148" font-family="'Share Tech Mono',monospace" font-size="7" fill="#4c1d95">HIGH</text>
+          <text x="190" y="148" font-family="'Share Tech Mono',monospace" font-size="7" fill="#4c1d95">STABLE</text>
+        </svg>
+      </div>
+      <div style="padding:0 16px 16px">
+        <div style="font-size:8px;letter-spacing:3px;color:var(--p8);margin-bottom:10px">NETWORK DIAGNOSTICS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:9px;">
+          <span style="color:var(--p9)">NEURONS</span><span style="color:var(--p6)">64</span>
+          <span style="color:var(--p9)">PATTERNS</span><span style="color:var(--p6)">94</span>
+          <span style="color:var(--p9)">CAPACITY</span><span style="color:var(--p6)">~9</span>
+          <span style="color:var(--p9)">OVERLOAD</span><span style="color:#f43f5e">10.4×</span>
+          <span style="color:var(--p9)">LEARNING</span><span style="color:var(--p6)">HEBBIAN</span>
+          <span style="color:var(--p9)">FAMILY</span><span style="color:var(--p4)">NONE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lore / Tech explanation -->
+  <div class="lore-section">
+    <p>
+      A <span>Hopfield network</span> is an associative memory — trained on patterns, it can recover them from noise.
+      John Hopfield showed in 1982 that the theoretical storage capacity is <em>~0.14 × N neurons</em>.
+      At 64 neurons per character, that's roughly <span>9 stable memories</span>.
+    </p>
+    <p>
+      Pattern Retrieval stores all <span>94 printable ASCII characters</span> — a <em>10.4× overload</em>.
+      When you force this much information into a network that small, something unexpected happens.
+      The energy landscape buckles. New stable minima appear: <span>attractors that correspond to no training pattern</span>.
+      Mixtures. Hybrids. Hallucinations.
+    </p>
+    <p>
+      These are <em>spurious states</em> — the network's false memories. Feed it pure noise and instead of
+      recalling any character, it falls into one of these <span>phantom attractors</span>. A new glyph.
+      A pattern that was never stored, yet the network treats as just as real as any other.
+      Hopfield called this phenomenon <span>spurious memories</span>. We call it <em>ghost art</em>.
+    </p>
+  </div>
+
+  <!-- Simulate Button -->
+  <div class="simulate-section">
+    <button class="simulate-btn" id="sim-btn" onclick="simulate()">
+      ▶ SIMULATE NEW SPURIOUS MEMORY
+    </button>
+    <div class="simulate-hint">INJECT NOISE · WATCH COLLAPSE · MEET YOUR GHOST</div>
+    <div class="pass-row" id="pass-row">
+      <div class="pass-pip" id="pip-0"></div>
+      <div class="pass-pip" id="pip-1"></div>
+      <div class="pass-pip" id="pip-2"></div>
+      <div class="pass-pip" id="pip-3"></div>
+      <div class="pass-pip" id="pip-4"></div>
+      <div class="pass-pip" id="pip-5"></div>
+      <div class="pass-pip" id="pip-6"></div>
+      <div class="pass-pip" id="pip-7"></div>
+    </div>
+  </div>
+
+  <!-- Families -->
+  <div class="families-section">
+    <div class="section-title">—— . PLAYER SELECT · CHOOSE YOUR FAMILY</div>
+    <div class="families-grid">
+      <div class="family-card">
+        <div class="family-name">DENSE SYMBOLS</div>
+        <div class="family-pop">5</div>
+        <div class="family-stat">PASSES: 7 · CELLS: 18</div>
+      </div>
+      <div class="family-card">
+        <div class="family-name">CONTAINERS</div>
+        <div class="family-pop">8</div>
+        <div class="family-stat">PASSES: 8 · CELLS: 14</div>
+      </div>
+      <div class="family-card">
+        <div class="family-name">FLOATING MARKS</div>
+        <div class="family-pop">9</div>
+        <div class="family-stat">PASSES: 8 · CELLS: 12</div>
+      </div>
+      <div class="family-card">
+        <div class="family-name">CROSSBARS</div>
+        <div class="family-pop">11</div>
+        <div class="family-stat">PASSES: 8 · CELLS: 18</div>
+      </div>
+      <div class="family-card">
+        <div class="family-name">GHOSTS</div>
+        <div class="family-pop">12</div>
+        <div class="family-stat">PASSES: 8 · CELLS: 0</div>
+      </div>
+      <div class="family-card">
+        <div class="family-name">ANGLES</div>
+        <div class="family-pop">17</div>
+        <div class="family-stat">PASSES: 8 · CELLS: 16</div>
+      </div>
+      <div class="family-card">
+        <div class="family-name">CURVES</div>
+        <div class="family-pop">32</div>
+        <div class="family-stat">PASSES: 8 · CELLS: 17</div>
+      </div>
+      <div class="family-card ghost-card">
+        <div class="family-name ghost">◈ SPURIOUS</div>
+        <div class="family-pop ghost" id="ghost-count">∞</div>
+        <div class="family-stat" style="color:var(--p7)">EMERGENT · OVERLOAD</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terminal block -->
+  <div class="terminal">
+    <div class="terminal-header">
+      <span>RELAXATION LOG · PASS 8/8</span>
+      <span id="term-status">COMPLETE</span>
+    </div>
+    <div class="terminal-body" id="terminal-body">
+      <div><span class="cmd">» LOAD_PATTERNS(94)</span></div>
+      <div><span class="out">Hebbian weights computed. Matrix: 64×64</span></div>
+      <div><span class="cmd">» INJECT_NOISE(λ=0.35)</span></div>
+      <div><span class="out">Random state vector initialized.</span></div>
+      <div><span class="cmd">» RELAX(passes=8)</span></div>
+      <div><span class="out">Pass 1 · E = -2841.2 · Δ = 847.3</span></div>
+      <div><span class="out">Pass 2 · E = -3492.1 · Δ = 650.9</span></div>
+      <div><span class="out">Pass 3 · E = -3841.0 · Δ = 348.9</span></div>
+      <div><span class="out">Pass 4 · E = -4012.4 · Δ = 171.4</span></div>
+      <div><span class="out">Pass 5 · E = -4089.7 · Δ = 77.3</span></div>
+      <div><span class="out">Pass 6 · E = -4118.3 · Δ = 28.6</span></div>
+      <div><span class="out">Pass 7 · E = -4127.1 · Δ = 8.8</span></div>
+      <div><span class="out">Pass 8 · E = -4129.9 · Δ = 2.8</span></div>
+      <div><span class="err">! PATTERN NOT IN TRAINING SET</span></div>
+      <div><span class="hi">✓ SPURIOUS ATTRACTOR CONFIRMED · FALSE MEMORY STABLE</span></div>
+      <div><span class="cmd">» <span class="cursor"></span></span></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-col-label">PROJECT</div>
+      <div class="footer-col-val"><a href="https://patternretrieval.app" target="_blank">patternretrieval.app</a></div>
+    </div>
+    <div>
+      <div class="footer-col-label">ARTIST</div>
+      <div class="footer-col-val"><a href="https://twitter.com/adamilenich" target="_blank">@adamilenich</a></div>
+    </div>
+    <div>
+      <div class="footer-col-label">MADE BY</div>
+      <div class="footer-col-val" style="line-height:1.8">
+        <a href="https://twitter.com/kubiyaro" target="_blank" style="color:var(--p3);text-shadow:0 0 12px rgba(192,132,252,0.5);text-decoration:none">@kubiyaro</a>
+        <span style="color:var(--p7)"> aka </span>
+        <span style="color:var(--p1)">Akhil</span>
+        <br>
+        <span style="color:#f43f5e;text-shadow:0 0 10px rgba(244,63,94,0.7);font-size:13px;letter-spacing:2px">with ♥</span>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>SPURIOUS ATTRACTOR LAB · HOPFIELD 1982</span>
+    <span style="color:var(--p7)">94 SPECIMENS · 7 FAMILIES · ∞ GHOSTS</span>
+    <span>CRAFTED BY <a href="https://twitter.com/kubiyaro" target="_blank" style="color:var(--p4);text-decoration:none;text-shadow:0 0 8px rgba(168,85,247,0.4)">@KUBIYARO</a> <span style="color:#f43f5e">♥</span></span>
+  </div>
+</footer>
+
+<script>
+// ── GHOST GLYPH GENERATOR ──
+// Each variant is a different spurious attractor pattern
+const VARIANTS = [
+  // variant 1 — crossbar heavy ghost
+  [
+    [0,0,1,1,1,1,1,1,0,0,0],
+    [0,1,1,0,0,0,0,1,1,0,0],
+    [1,1,0,0,0,0,0,0,1,1,0],
+    [1,0,0,0,0,0,0,0,0,1,0],
+    [1,1,1,1,1,1,1,1,1,1,0],
+    [1,0,0,0,0,0,0,0,0,1,0],
+    [1,0,1,0,1,0,1,0,0,1,0],
+    [1,1,1,1,1,1,1,1,1,1,0],
+    [0,1,0,0,0,0,0,0,1,0,0],
+    [0,0,1,1,0,0,1,1,0,0,0],
+    [0,0,0,1,1,1,1,0,0,0,0],
+  ],
+  // variant 2 — angle + curve hybrid
+  [
+    [1,1,0,0,0,0,0,0,0,0,0],
+    [0,1,1,0,0,0,0,0,0,0,0],
+    [0,0,1,1,1,1,1,0,0,0,0],
+    [0,0,0,1,0,0,1,1,0,0,0],
+    [0,0,1,1,0,0,0,1,0,0,0],
+    [0,1,1,0,1,1,0,1,0,0,0],
+    [1,1,0,0,1,1,0,1,0,0,0],
+    [0,0,0,0,0,0,1,1,1,1,0],
+    [0,0,0,0,0,0,1,0,1,1,0],
+    [0,0,0,0,0,1,1,0,0,1,1],
+    [0,0,0,0,0,0,1,0,0,1,1],
+  ],
+  // variant 3 — container echo
+  [
+    [0,1,1,1,1,1,1,1,1,0,0],
+    [1,1,0,0,0,0,0,0,1,1,0],
+    [1,0,0,0,0,0,0,0,0,1,0],
+    [1,0,0,1,1,1,0,0,0,1,0],
+    [1,0,1,1,0,1,1,0,0,1,0],
+    [1,0,0,1,0,1,0,0,0,1,0],
+    [1,0,0,1,1,1,0,0,0,1,0],
+    [1,0,0,0,0,0,0,0,0,1,0],
+    [1,1,0,0,0,0,0,0,1,1,0],
+    [0,1,1,1,1,1,1,1,1,0,0],
+    [0,0,1,0,0,0,0,1,0,0,0],
+  ],
+  // variant 4 — dense symbol + float
+  [
+    [0,1,1,0,1,1,0,1,1,0,0],
+    [1,1,1,1,1,1,1,1,1,1,0],
+    [1,1,0,1,0,1,0,1,0,1,0],
+    [0,1,1,1,1,1,1,1,1,0,0],
+    [0,0,1,0,0,0,0,1,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,1,1,1,0,0,0,0,0],
+    [0,0,1,1,1,1,1,0,0,0,0],
+    [0,1,1,0,1,0,1,1,0,0,0],
+    [0,0,1,1,1,1,1,0,0,0,0],
+    [0,0,0,1,1,1,0,0,0,0,0],
+  ],
+];
+
+const PIXEL = 14;
+const GAP = 2;
+const COLORS = {
+  bright: '#f3e8ff',
+  mid: '#e9d5ff',
+  core: '#d8b4fe',
+  base: '#c084fc',
+  deep: '#a855f7',
+  dark: '#9333ea',
+  deeper: '#7c3aed',
+};
+
+let currentVariant = 0;
+let simRunning = false;
+
+function drawGlyph(variantIdx, noise = 0) {
+  const svg = document.getElementById('ghost-svg');
+  const pattern = VARIANTS[variantIdx];
+  const rows = pattern.length;
+  const cols = pattern[0].length;
+  const W = cols * (PIXEL + GAP);
+  const H = rows * (PIXEL + GAP);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  let html = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * (PIXEL + GAP);
+      const y = r * (PIXEL + GAP);
+      let val = pattern[r][c];
+      // add noise
+      if (noise > 0 && Math.random() < noise) val = val ? 0 : 1;
+
+      if (val) {
+        // vary brightness by position for depth
+        const dist = Math.sqrt((r - rows/2)**2 + (c - cols/2)**2);
+        const maxDist = Math.sqrt((rows/2)**2 + (cols/2)**2);
+        const t = 1 - dist / maxDist;
+        const col = t > 0.7 ? COLORS.bright
+          : t > 0.5 ? COLORS.mid
+          : t > 0.35 ? COLORS.core
+          : t > 0.2 ? COLORS.base
+          : COLORS.deep;
+        html += `<rect x="${x}" y="${y}" width="${PIXEL}" height="${PIXEL}" fill="${col}" rx="1"/>`;
+      }
+    }
+  }
+  svg.innerHTML = html;
+}
+
+function simulate() {
+  if (simRunning) return;
+  simRunning = true;
+
+  const btn = document.getElementById('sim-btn');
+  const badge = document.getElementById('locked-badge');
+  const panelStatus = document.getElementById('panel-status');
+  const variantNum = document.getElementById('variant-num');
+
+  btn.classList.add('running');
+  btn.textContent = '◌ INJECTING NOISE...';
+  badge.style.opacity = '0';
+  panelStatus.textContent = 'RELAXING';
+  panelStatus.style.color = 'var(--p8)';
+
+  // Reset pips
+  for (let i = 0; i < 8; i++) {
+    const pip = document.getElementById(`pip-${i}`);
+    pip.classList.remove('active', 'done');
+  }
+
+  // Reset terminal
+  updateTerminal('running');
+
+  let pass = 0;
+  const noiseLevel = [0.95, 0.8, 0.65, 0.5, 0.35, 0.2, 0.1, 0.02];
+  const nextVariant = (currentVariant + 1) % VARIANTS.length;
+
+  const runPass = () => {
+    if (pass < 8) {
+      // Activate pip
+      if (pass > 0) document.getElementById(`pip-${pass-1}`).classList.replace('active', 'done');
+      document.getElementById(`pip-${pass}`).classList.add('active');
+
+      // Draw with decreasing noise
+      drawGlyph(nextVariant, noiseLevel[pass]);
+
+      pass++;
+      btn.textContent = `◌ PASS ${pass}/8 · RELAXING...`;
+      setTimeout(runPass, 220);
+    } else {
+      // Done
+      document.getElementById(`pip-7`).classList.replace('active', 'done');
+      currentVariant = nextVariant;
+      drawGlyph(currentVariant, 0);
+
+      badge.style.opacity = '1';
+      panelStatus.textContent = 'STABLE';
+      panelStatus.style.color = 'var(--p5)';
+      variantNum.textContent = String(currentVariant + 1).padStart(2, '0');
+
+      btn.classList.remove('running');
+      btn.textContent = '▶ SIMULATE NEW SPURIOUS MEMORY';
+
+      updateTerminal('done', currentVariant);
+      simRunning = false;
+    }
+  };
+
+  setTimeout(runPass, 100);
+}
+
+function updateTerminal(state, variant = 0) {
+  const body = document.getElementById('terminal-body');
+  const status = document.getElementById('term-status');
+
+  if (state === 'running') {
+    status.textContent = 'RUNNING';
+    status.style.color = 'var(--p5)';
+    body.innerHTML = `
+      <div><span class="cmd">» LOAD_PATTERNS(94)</span></div>
+      <div><span class="out">Hebbian weights computed. Matrix: 64×64</span></div>
+      <div><span class="cmd">» INJECT_NOISE(λ=0.35)</span></div>
+      <div><span class="out">Random state vector initialized.</span></div>
+      <div><span class="cmd">» RELAX(passes=8)</span></div>
+      <div><span class="out" style="color:var(--p5)">Running...</span></div>
+      <div><span class="cmd">» <span class="cursor"></span></span></div>
+    `;
+  } else {
+    status.textContent = 'COMPLETE';
+    status.style.color = 'var(--p4)';
+    const energies = [
+      [-2841.2, 847.3], [-3492.1, 650.9], [-3841.0, 348.9],
+      [-4012.4, 171.4], [-4089.7, 77.3], [-4118.3, 28.6],
+      [-4127.1, 8.8], [-4129.9, 2.8]
+    ].map(([e, d]) => ({ e: (e + Math.random()*20-10).toFixed(1), d: (d + Math.random()*5-2.5).toFixed(1) }));
+
+    body.innerHTML = `
+      <div><span class="cmd">» LOAD_PATTERNS(94)</span></div>
+      <div><span class="out">Hebbian weights computed. Matrix: 64×64</span></div>
+      <div><span class="cmd">» INJECT_NOISE(λ=0.35)</span></div>
+      <div><span class="out">Random state vector initialized.</span></div>
+      <div><span class="cmd">» RELAX(passes=8)</span></div>
+      ${energies.map((e,i) => `<div><span class="out">Pass ${i+1} · E = ${e.e} · Δ = ${e.d}</span></div>`).join('')}
+      <div><span class="err">! PATTERN NOT IN TRAINING SET</span></div>
+      <div><span class="hi">✓ SPURIOUS ATTRACTOR #${variant+1} CONFIRMED · FALSE MEMORY STABLE</span></div>
+      <div><span class="cmd">» <span class="cursor"></span></span></div>
+    `;
+
+    // Update energy plot
+    const line = document.getElementById('energy-line');
+    const dot = document.getElementById('energy-dot');
+    const xs = [10, 38, 66, 94, 122, 150, 178, 206, 230];
+    const ys = [25 + Math.random()*10, 55+Math.random()*10, 82+Math.random()*10,
+                104+Math.random()*8, 118+Math.random()*6, 128+Math.random()*4,
+                133+Math.random()*3, 136+Math.random()*2, 137+Math.random()*2];
+    const pts = xs.map((x,i) => `${x},${ys[i]}`).join(' ');
+    line.setAttribute('points', pts);
+    dot.setAttribute('cx', xs[8]);
+    dot.setAttribute('cy', ys[8]);
+  }
+}
+
+// Init on load
+drawGlyph(0, 0);
+</script>
+</body>
+</html>
